@@ -1,0 +1,47 @@
+function onEdit(e) {
+  var sheet = e.source.getActiveSheet();
+  var sheetName = sheet.getName();
+  var column = e.range.getColumn();
+  
+  var targetColumns = [4, 6];  
+  
+  if (sheetName === 'Proposal_Details_2024' && targetColumns.includes(column)) {
+    var editedRow = e.range.getRow();
+    var oldCellValue = e.oldValue;
+    var newCellValue = e.value;
+    
+    // Format old cell value if it is a date
+    if (oldCellValue instanceof Date) {
+      oldCellValue = Utilities.formatDate(oldCellValue, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else {
+      oldCellValue = oldCellValue !== undefined ? oldCellValue.toString() : "N/A";
+    }
+
+    // Ensure new cell value is a string
+    if (newCellValue instanceof Date) {
+      newCellValue = Utilities.formatDate(newCellValue, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else {
+      newCellValue = newCellValue !== undefined ? newCellValue.toString() : "N/A";
+    }
+
+    var editorEmail = Session.getActiveUser().getEmail();
+    var timestamp = formatDateWithTimezone(new Date(), "Asia/Riyadh");
+    
+    var logSheet = e.source.getSheetByName('Log_Edit') || e.source.insertSheet('Log_Edit');
+    
+    // Get the entire row data from the original sheet
+    var rowData = sheet.getRange(editedRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    if (logSheet.getLastRow() === 0) {
+      // Append headers to log sheet
+      logSheet.appendRow(["Timestamp", "Editor Email", "Edited Row Index", "Old Value", "New Value"].concat(sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]));
+    }
+    
+    // Append log entry with row data
+    logSheet.appendRow([timestamp, editorEmail, editedRow, oldCellValue, newCellValue].concat(rowData));
+  }
+}
+
+function formatDateWithTimezone(date, timeZone) {
+  return Utilities.formatDate(date, timeZone, 'dd-MMMM-yyyy HH:mm:ss');
+}
